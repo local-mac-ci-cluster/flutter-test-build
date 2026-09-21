@@ -20,6 +20,10 @@ jobs:
   build-flutter:
     runs-on: [macos, arm64, macrunara]
 
+    env:
+      # upload-artifact 按其声明的 Node 20 运行，绕开 Node 24 下代理 ECONNRESET 问题
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
     steps:
       - uses: actions/checkout@v4
 
