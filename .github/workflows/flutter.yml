@@ -3,8 +3,8 @@
 # 仓库只保留最小源码（pubspec/lib/test），平台脚手架（ios/ android/）
 # 由 Step 3 的 `flutter create .` 在 CI 内现场重建——这是官方支持的模式。
 #
-# 冒烟期临时配置：job 级代理走 Windows 172.16.0.81:7890（pub.dev 依赖下载用，
-# 生产切内网白名单后删除下面 env 块即可）。
+# 出网代理由 l4-agent 在 VM 内统一注入（runner wrapper 环境变量 +
+# gitconfig + gradle.properties），workflow 不携带任何代理配置。
 # =============================================================================
 
 name: Flutter CI
@@ -19,11 +19,6 @@ on:
 jobs:
   build-flutter:
     runs-on: [macos, arm64, macrunara]
-
-    env:
-      # --- 冒烟期临时：pub.dev 走 Windows 代理 ---
-      http_proxy: http://172.16.0.81:7890
-      https_proxy: http://172.16.0.81:7890
 
     steps:
       - uses: actions/checkout@v4
