@@ -23,6 +23,9 @@ jobs:
     env:
       # upload-artifact 按其声明的 Node 20 运行，绕开 Node 24 下代理 ECONNRESET 问题
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      # pub 走国内镜像直连（不出境）；scaffold 步骤在 action 之前跑，必须在 job 级 env 设置
+      PUB_HOSTED_URL: https://pub.flutter-io.cn
+      FLUTTER_STORAGE_BASE_URL: https://storage.flutter-io.cn
 
     steps:
       - uses: actions/checkout@v4
