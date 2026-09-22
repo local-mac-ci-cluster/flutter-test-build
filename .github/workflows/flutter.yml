@@ -47,7 +47,7 @@ jobs:
 
       # Step 4: 分析 + 测试 + 双端构建 + 上传
       - name: Flutter Build & Upload
-        uses: macrunara/build-actions/flutter@5f896e0245d47dd32ff3c2be24bcf28988c0068f  # v1 (maven mirrors)
+        uses: macrunara/build-actions/flutter@46d8bd1dfa108ffb00db06e0b07e41f2906d6297  # v1 (maven mirrors)
         with:
           platform: all
           build-mode: release
