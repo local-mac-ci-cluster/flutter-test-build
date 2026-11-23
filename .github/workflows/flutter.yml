@@ -55,10 +55,12 @@ jobs:
           mirrors = ('            maven("https://maven.aliyun.com/repository/google")\n'
                      '            maven("https://maven.aliyun.com/repository/central")\n'
                      '            maven("https://maven.aliyun.com/repository/gradle-plugin")\n')
-          # gradle wrapper 走腾讯镜像（services.gradle.org 直连会静默挂死）
+          # wrapper 保持 services.gradle.org（Squid 白名单内、android 仓库已验证秒下），
+          # 但 all → bin：9.3.1-all.zip（~230MB）在 CDN 上会静默挂死；bin 版足够构建。
+          # （腾讯镜像 mirrors.cloud.tencent.com 被 Squid 403，勿用；2026-11-23 实测）
           wp = pathlib.Path("android/gradle/wrapper/gradle-wrapper.properties")
           wt = wp.read_text()
-          wt = wt.replace("services.gradle.org/distributions/", "mirrors.cloud.tencent.com/gradle/")
+          wt = wt.replace("gradle-9.3.1-all.zip", "gradle-9.3.1-bin.zip")
           wp.write_text(wt)
           print("wrapper:", [l for l in wt.splitlines() if "distributionUrl" in l])
           for f in ("android/settings.gradle.kts", "android/build.gradle.kts"):
