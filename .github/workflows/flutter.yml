@@ -74,7 +74,10 @@ jobs:
         run: flutter build ipa --release --no-codesign
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon --info --stacktrace
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
