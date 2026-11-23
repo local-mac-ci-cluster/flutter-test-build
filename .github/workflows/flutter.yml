@@ -55,6 +55,12 @@ jobs:
           mirrors = ('            maven("https://maven.aliyun.com/repository/google")\n'
                      '            maven("https://maven.aliyun.com/repository/central")\n'
                      '            maven("https://maven.aliyun.com/repository/gradle-plugin")\n')
+          # gradle wrapper 走腾讯镜像（services.gradle.org 直连会静默挂死）
+          wp = pathlib.Path("android/gradle/wrapper/gradle-wrapper.properties")
+          wt = wp.read_text()
+          wt = wt.replace("services.gradle.org/distributions/", "mirrors.cloud.tencent.com/gradle/")
+          wp.write_text(wt)
+          print("wrapper:", [l for l in wt.splitlines() if "distributionUrl" in l])
           for f in ("android/settings.gradle.kts", "android/build.gradle.kts"):
               p = pathlib.Path(f)
               t = p.read_text()
