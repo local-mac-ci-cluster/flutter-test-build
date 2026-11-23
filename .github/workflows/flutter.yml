@@ -45,13 +45,24 @@ jobs:
           flutter create . --platforms ios,android --project-name flutter_test_build
 
       # 节点出口到 repo.maven.apache.org 被重置（TLS handshake terminated），
-      # 新脚手架依赖无缓存会拉取失败；在 settings/build.gradle 的 repositories
-      # 最前面插入阿里云镜像（原 action 的 maven mirrors 能力的纯 run: 替代）。
+      # 新脚手架依赖无缓存会拉取失败；在 .kts 的 repositories 最前面插入
+      # 阿里云镜像（原 action 的 maven mirrors 能力的纯 run: 替代）。
       # 节点出口修复后本步骤可删除（2026-11-23 记）
       - name: Prepend Maven mirrors (node egress workaround)
         run: |
-          sed -i '' 's/repositories {/repositories {            maven { url "https:\/\/maven.aliyun.com\/repository\/google" }            maven { url "https:\/\/maven.aliyun.com\/repository\/central" }            maven { url "https:\/\/maven.aliyun.com\/repository\/gradle-plugin" }/'             android/settings.gradle android/build.gradle
-          grep -A4 "repositories {" android/settings.gradle | head -12
+          python3 - <<'PYEOF'
+          import pathlib
+          mirrors = ('            maven("https://maven.aliyun.com/repository/google")\n'
+                     '            maven("https://maven.aliyun.com/repository/central")\n'
+                     '            maven("https://maven.aliyun.com/repository/gradle-plugin")\n')
+          for f in ("android/settings.gradle.kts", "android/build.gradle.kts"):
+              p = pathlib.Path(f)
+              t = p.read_text()
+              t = t.replace("repositories {", "repositories {\n" + mirrors)
+              p.write_text(t)
+              print("patched", f)
+          PYEOF
+          grep -A4 "repositories {" android/settings.gradle.kts | head -12
 
       - name: Flutter Analyze & Test
         run: |
