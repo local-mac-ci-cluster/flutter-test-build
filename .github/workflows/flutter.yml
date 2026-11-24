@@ -44,33 +44,29 @@ jobs:
           git config --global --add safe.directory "$HOME/flutter" || true
           flutter create . --platforms ios,android --project-name flutter_test_build
 
-      # 节点出口到 repo.maven.apache.org 被重置（TLS handshake terminated），
-      # 新脚手架依赖无缓存会拉取失败；在 .kts 的 repositories 最前面插入
-      # 阿里云镜像（原 action 的 maven mirrors 能力的纯 run: 替代）。
-      # 节点出口修复后本步骤可删除（2026-11-23 记）
-      - name: Prepend Maven mirrors (node egress workaround)
+      # 节点出口到 repo.maven.apache.org / plugins.gradle.org 被重置
+      # （TLS handshake terminated），统一经 init.d 注入 aliyun 镜像；并直接改写
+      # Flutter SDK flutter_tools/gradle 自带的 buildscript 仓库（init.d 对
+      # includeBuild 内项目的 buildscript 覆盖不可靠，2026-11-24 实测
+      # kotlin-gradle-plugin 2.2.21 从 repo.maven.apache.org 直连被掐）。
+      # 节点出口修复（§7 N150 白名单部署）后本步骤可删除。
+      - name: Setup Maven mirrors
         run: |
-          python3 - <<'PYEOF'
-          import pathlib
-          mirrors = ('            maven("https://maven.aliyun.com/repository/google")\n'
-                     '            maven("https://maven.aliyun.com/repository/central")\n'
-                     '            maven("https://maven.aliyun.com/repository/gradle-plugin")\n')
-          # wrapper 保持 services.gradle.org（Squid 白名单内、android 仓库已验证秒下），
-          # 但 all → bin：9.3.1-all.zip（~230MB）在 CDN 上会静默挂死；bin 版足够构建。
-          # （腾讯镜像 mirrors.cloud.tencent.com 被 Squid 403，勿用；2026-11-23 实测）
-          wp = pathlib.Path("android/gradle/wrapper/gradle-wrapper.properties")
-          wt = wp.read_text()
-          wt = wt.replace("gradle-9.3.1-all.zip", "gradle-9.3.1-bin.zip")
-          wp.write_text(wt)
-          print("wrapper:", [l for l in wt.splitlines() if "distributionUrl" in l])
-          for f in ("android/settings.gradle.kts", "android/build.gradle.kts"):
-              p = pathlib.Path(f)
-              t = p.read_text()
-              t = t.replace("repositories {", "repositories {\n" + mirrors)
-              p.write_text(t)
-              print("patched", f)
-          PYEOF
-          grep -A4 "repositories {" android/settings.gradle.kts | head -12
+          bash .ci/scripts/setup-maven-mirrors.sh
+          FG="$HOME/flutter/packages/flutter_tools/gradle/build.gradle.kts"
+          if [ -f "$FG" ]; then
+            sed -i '' -E 's#mavenCentral\(\)#maven { url = uri("https://maven.aliyun.com/repository/central") }\n        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }#g' "$FG"
+            echo "patched flutter_tools buildscript:"
+            grep -n -A2 "repositories" "$FG" | head -8
+          fi
+
+      # wrapper 保持 services.gradle.org（Squid 白名单内、android 仓库已验证秒下），
+      # 但 all → bin：9.3.1-all.zip（~230MB）在 CDN 上会静默挂死；bin 版足够构建。
+      # （腾讯镜像 mirrors.cloud.tencent.com 被 Squid 403，勿用；2026-11-23 实测）
+      - name: Switch Gradle wrapper to bin
+        run: |
+          sed -i '' 's/gradle-9.3.1-all\.zip/gradle-9.3.1-bin.zip/' android/gradle/wrapper/gradle-wrapper.properties
+          grep distributionUrl android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Flutter Analyze & Test
         run: |
