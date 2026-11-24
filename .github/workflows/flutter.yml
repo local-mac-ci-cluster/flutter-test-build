@@ -87,6 +87,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-products
+          # APK 由 android/ 目录内直接 gradlew 产出（非 flutter build apk 路径）
           path: |
             build/ios/ipa/*.ipa
-            build/app/outputs/flutter-apk/app-release.apk
+            android/app/build/outputs/apk/release/*.apk
